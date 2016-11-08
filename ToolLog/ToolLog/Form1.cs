@@ -5,51 +5,22 @@ using System.Data;
 using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using System.Runtime.InteropServices;
-
 
 namespace ToolLog
 {
-
     public partial class Form1 : Form
     {
-        [DllImport("user32.dll")]
-        static extern bool HideCaret(IntPtr hWnd);
+       
 
-        [System.Runtime.InteropServices.DllImport("User32.dll")]
-        extern static int GetScrollPos(IntPtr hWnd, int nBar);
-
-        [System.Runtime.InteropServices.DllImport("user32.dll")]
-        static extern int SetScrollPos(IntPtr hWnd, int nBar, int nPos, bool bRedraw);
-
-        [DllImport("user32.dll", EntryPoint = "LockWindowUpdate", SetLastError = true, CharSet = CharSet.Auto)]
-        private static extern IntPtr LockWindow(IntPtr Handle);
         public Form1()
         {
             InitializeComponent();
-            /*using (Process process = new Process())
-            {
-                process.StartInfo.FileName = "adb";
-                process.StartInfo.Arguments = "logcat";
-                // 必须禁用操作系统外壳程序  
-                process.StartInfo.UseShellExecute = false;
-                process.StartInfo.CreateNoWindow = true;
-                process.StartInfo.RedirectStandardOutput = true;
-                
-                process.Start();
-                
-                string output = process.StandardOutput.ReadToEnd();
-
-                if (String.IsNullOrEmpty(output) == false)
-                    this.richTextBox1.AppendText(output + "\r\n");
-                process.WaitForExit();
-                process.Close();
-            }*/
         }
-        
+
         private void button1_Click(object sender, EventArgs e)
         {
             using (Process process = new System.Diagnostics.Process())
@@ -73,8 +44,14 @@ namespace ToolLog
                 // 为异步获取订阅事件  
                 process.OutputDataReceived += new DataReceivedEventHandler(process_OutputDataReceived);
             }
+
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void process_OutputDataReceived(object sender, DataReceivedEventArgs e)
         {
             // 这里仅做输出的示例，实际上您可以根据情况取消获取命令行的内容  
@@ -82,8 +59,6 @@ namespace ToolLog
 
             if (String.IsNullOrEmpty(e.Data) == false)
             {
-                //this.AppendText(e.Data + "\r\n");
-
                 
                 switch (e.Data[0])
                 {
@@ -97,29 +72,10 @@ namespace ToolLog
                         this.LogMessage(e.Data + "\r\n");
                         break;
                 }
-                
+
             }
-               
+
         }
-
-        #region 解决多线程下控件访问的问题  
-
-        public delegate void AppendTextCallback(string text);
-
-        public void AppendText(string text)
-        {
-            if (this.richTextBox1.InvokeRequired)
-            {
-                AppendTextCallback d = new AppendTextCallback(AppendText);
-                this.richTextBox1.Invoke(d, text);
-            }
-            else
-            {
-                this.richTextBox1.AppendText(text);
-            }
-        }
-
-        #endregion
 
         #region 日志信息，支持其他线程访问
         /// <summary>
@@ -136,23 +92,25 @@ namespace ToolLog
         /// <param name="text"></param>
         public void LogAppend(Color color, string text)
         {
-            if (this.richTextBox1.isStopScroll)
-                        {
-                            int pos = this.richTextBox1.SelectionStart;
-                            this.richTextBox1.AppendText(text);
-                            this.richTextBox1.SelectionStart = pos;
-                        }else
-                        {
-                            this.richTextBox1.SelectionColor = color;
-                            this.richTextBox1.AppendText(text);
+            
+            int start = this.richTextBox1.SelectionStart;
+            
+            int len = this.richTextBox1.SelectionLength;
+            
+            int newStart = this.richTextBox1.TextLength;
+            //Debug.Print("start:" + start);
+            Debug.Print("newStart:" + newStart);
 
-                        }
-            this.richTextBox1.SelectionColor = color;
             this.richTextBox1.AppendText(text);
-            MessageBox.Show(this.richTextBox1.Cursor.ToString());
-            //MessageBox.Show(this.richTextBox1.SelectionStart + "");
-            //this.richTextBox1.SelectionColor = color;
-            //this.richTextBox1.Text += text;
+
+            int newEnd = this.richTextBox1.TextLength;
+            Debug.Print("newEnd:" + newEnd);
+
+            this.richTextBox1.Select(newStart, newEnd - newStart);
+            this.richTextBox1.SelectionColor = color;            
+            this.richTextBox1.Select(start, len);
+            
+            
         }
 
         /// <summary>
@@ -187,29 +145,22 @@ namespace ToolLog
 
         #endregion
 
-        private void richTextBox1_MouseDown(object sender, MouseEventArgs e)
+     
+        /// <summary>
+        /// Timer
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void timer1_Tick(object sender, EventArgs e)
         {
-            if (e.Button == MouseButtons.Right)
+            if (!this.richTextBox1.isStopScroll)
             {
-                //HideCaret(Handle);
-                //this.button1.Focus();
-                //var pos = GetScrollPos(this.richTextBox1.Handle, 1);
-                //MessageBox.Show("Pos:" + pos);
-                //SetScrollPos(this.richTextBox1.Handle, 1, pos, true);
-
-                //LockWindow(this.richTextBox1.Handle);
-                this.richTextBox1.isStopScroll = true;
+                // set the current caret position to the end
+                this.richTextBox1.SelectionStart = this.richTextBox1.Text.Length;
+                // scroll it automatically
+                this.richTextBox1.ScrollToCaret();
             }
-        }
-
-        private void richTextBox1_MouseDoubleClick(object sender, MouseEventArgs e)
-        {
-            //if (e.Button == MouseButtons.Right)
-            {
-                //HideCaret(Handle);
-                //this.button1.Focus();
-                this.richTextBox1.isStopScroll = false;
-            }
+            
         }
     }
 }
