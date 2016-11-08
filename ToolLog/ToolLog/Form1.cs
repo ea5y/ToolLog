@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Win32;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -14,23 +15,50 @@ namespace ToolLog
 {
     public partial class Form1 : Form
     {
-       
+        string Command = "";
 
         public Form1()
         {
             InitializeComponent();
+            this.ToolLogRegeditLoad();
         }
 
-        private void button1_Click(object sender, EventArgs e)
+        private void ToolLogRegeditLoad()
+        {
+            try
+            {
+                RegistryKey reg = Registry.CurrentUser.OpenSubKey("SOFTWARE_STORAGE\\GAME_TOOLS\\TOOL_LOG", true);
+                if (reg != null)
+                {
+                    this.FilePathBox.Text = reg.GetValue("FilePath") as string;
+                    this.CommandBox.Text = reg.GetValue("Command") as string;
+                }
+                reg.Close();
+            }
+            catch (Exception ex)
+            {
+                //MessageBox.Show(ex.Message);
+            }
+        }
+
+
+        private void StartBtn_Click(object sender, EventArgs e)
         {
             using (Process process = new System.Diagnostics.Process())
             {
-                //process.StartInfo.FileName = "ping";
-                //process.StartInfo.Arguments = "www.ymind.net -t";
+                string str = this.CommandBox.Text;
+                var strArray = str.Split(' ');
 
-                process.StartInfo.FileName = "adb";
-                process.StartInfo.Arguments = "logcat";
+                string arguments = "";
+                for(int i = 1; i < strArray.Length; i++)
+                {
+                    arguments += strArray[i] + ' ';
+                }
 
+                process.StartInfo.FileName = this.FilePathBox.Text + "\\" + strArray[0];
+                process.StartInfo.Arguments = arguments;
+
+                this.Command = strArray[0] + " " + arguments;
                 // 必须禁用操作系统外壳程序  
                 process.StartInfo.UseShellExecute = false;
                 process.StartInfo.CreateNoWindow = true;
@@ -43,6 +71,33 @@ namespace ToolLog
 
                 // 为异步获取订阅事件  
                 process.OutputDataReceived += new DataReceivedEventHandler(process_OutputDataReceived);
+
+                //hide group
+                //this.groupBox.Visible = false;
+                
+            }
+
+            try
+            {
+                RegistryKey rsg = null;
+                if (Registry.CurrentUser.OpenSubKey("SOFTWARE_STORAGE\\GAME_TOOLS\\TOOL_LOG") == null)
+                {
+                    Registry.CurrentUser.CreateSubKey("SOFTWARE_STORAGE\\GAME_TOOLS\\TOOL_LOG");//创建
+                }
+
+                rsg = Registry.CurrentUser.OpenSubKey("SOFTWARE_STORAGE\\GAME_TOOLS\\TOOL_LOG", true);
+
+                /*foreach (KeyValuePair<string, string> kvp in proDict)
+                {
+                    rsg.SetValue(kvp.Key, kvp.Value);
+                }*/
+                rsg.SetValue("FilePath", this.FilePathBox.Text);
+                rsg.SetValue("Command", this.Command);
+                rsg.Close();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
             }
 
         }
@@ -161,6 +216,61 @@ namespace ToolLog
                 this.richTextBox1.ScrollToCaret();
             }
             
+        }
+
+        private void textBox1_TextChanged(object sender, EventArgs e)
+        {
+            //Debug.Print("textChange!");
+        }
+
+        private void textBox1_Enter(object sender, EventArgs e)
+        {
+            Debug.Print("textChange!");
+        }
+
+        private void Browser_Click(object sender, EventArgs e)
+        {
+            //set root folder
+            folderBrowserDialog1.RootFolder = Environment.SpecialFolder.Desktop;
+            //set select path
+            folderBrowserDialog1.SelectedPath = "C:\\";
+            //allow create new folder
+            folderBrowserDialog1.ShowNewFolderButton = true;
+            //set info
+            folderBrowserDialog1.Description = "请选择文件";
+            if (folderBrowserDialog1.ShowDialog() == DialogResult.OK)
+            {
+                this.FilePathBox.Text = folderBrowserDialog1.SelectedPath;
+            }
+        }
+
+        internal void FindText(RichTextBox rtb, string text)
+        {
+            rtb.HideSelection = false;
+            int searchStartPosition = rtb.SelectionStart;
+            if (rtb.SelectedText.Length > 0)
+            {
+                searchStartPosition = rtb.SelectionStart + rtb.SelectedText.Length;
+            }
+
+            int indexOfText = rtb.Find(text, searchStartPosition, RichTextBoxFinds.None);
+            if (indexOfText >= 0)
+            {
+                searchStartPosition = indexOfText + rtb.SelectionLength;
+                rtb.Select(indexOfText, rtb.SelectionLength);
+            }
+            else
+            {
+                MessageBox.Show(String.Format("找不到“{0}”...", text));
+            }
+        }
+
+        private void FindBox_KeyDown(object sender, KeyEventArgs e)
+        {
+            if(e.KeyCode == Keys.Enter)
+            {
+                this.FindText(this.richTextBox1, this.FindBox.Text);
+            }
         }
     }
 }
