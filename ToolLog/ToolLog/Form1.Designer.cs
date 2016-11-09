@@ -33,13 +33,13 @@
             this.timer1 = new System.Windows.Forms.Timer(this.components);
             this.FilePathBox = new System.Windows.Forms.TextBox();
             this.groupBox = new System.Windows.Forms.GroupBox();
+            this.label2 = new System.Windows.Forms.Label();
+            this.label1 = new System.Windows.Forms.Label();
             this.CommandBox = new System.Windows.Forms.TextBox();
             this.Browser = new System.Windows.Forms.Button();
             this.folderBrowserDialog1 = new System.Windows.Forms.FolderBrowserDialog();
-            this.label1 = new System.Windows.Forms.Label();
-            this.label2 = new System.Windows.Forms.Label();
-            this.richTextBox1 = new ToolLog.CustomRichTextBox();
             this.FindBox = new System.Windows.Forms.TextBox();
+            this.richTextBox1 = new ToolLog.CustomRichTextBox();
             this.groupBox.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -55,7 +55,6 @@
             // 
             // timer1
             // 
-            this.timer1.Enabled = true;
             this.timer1.Interval = 500;
             this.timer1.Tick += new System.EventHandler(this.timer1_Tick);
             // 
@@ -79,9 +78,27 @@
             this.groupBox.Controls.Add(this.StartBtn);
             this.groupBox.Location = new System.Drawing.Point(12, 0);
             this.groupBox.Name = "groupBox";
-            this.groupBox.Size = new System.Drawing.Size(642, 48);
+            this.groupBox.Size = new System.Drawing.Size(576, 48);
             this.groupBox.TabIndex = 3;
             this.groupBox.TabStop = false;
+            // 
+            // label2
+            // 
+            this.label2.AutoSize = true;
+            this.label2.Location = new System.Drawing.Point(324, 21);
+            this.label2.Name = "label2";
+            this.label2.Size = new System.Drawing.Size(53, 12);
+            this.label2.TabIndex = 6;
+            this.label2.Text = "FilePath";
+            // 
+            // label1
+            // 
+            this.label1.AutoSize = true;
+            this.label1.Location = new System.Drawing.Point(6, 22);
+            this.label1.Name = "label1";
+            this.label1.Size = new System.Drawing.Size(47, 12);
+            this.label1.TabIndex = 5;
+            this.label1.Text = "Command";
             // 
             // CommandBox
             // 
@@ -100,23 +117,15 @@
             this.Browser.UseVisualStyleBackColor = true;
             this.Browser.Click += new System.EventHandler(this.Browser_Click);
             // 
-            // label1
+            // FindBox
             // 
-            this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(6, 22);
-            this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(47, 12);
-            this.label1.TabIndex = 5;
-            this.label1.Text = "Command";
-            // 
-            // label2
-            // 
-            this.label2.AutoSize = true;
-            this.label2.Location = new System.Drawing.Point(324, 21);
-            this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(53, 12);
-            this.label2.TabIndex = 6;
-            this.label2.Text = "FilePath";
+            this.FindBox.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.FindBox.Location = new System.Drawing.Point(4, 236);
+            this.FindBox.Name = "FindBox";
+            this.FindBox.Size = new System.Drawing.Size(172, 21);
+            this.FindBox.TabIndex = 4;
+            this.FindBox.Visible = false;
+            this.FindBox.KeyDown += new System.Windows.Forms.KeyEventHandler(this.FindBox_KeyDown);
             // 
             // richTextBox1
             // 
@@ -125,23 +134,17 @@
             | System.Windows.Forms.AnchorStyles.Right)));
             this.richTextBox1.Location = new System.Drawing.Point(0, 54);
             this.richTextBox1.Name = "richTextBox1";
-            this.richTextBox1.Size = new System.Drawing.Size(666, 208);
+            this.richTextBox1.ReadOnly = true;
+            this.richTextBox1.Size = new System.Drawing.Size(600, 206);
             this.richTextBox1.TabIndex = 0;
             this.richTextBox1.Text = "";
-            // 
-            // FindBox
-            // 
-            this.FindBox.Location = new System.Drawing.Point(554, 54);
-            this.FindBox.Name = "FindBox";
-            this.FindBox.Size = new System.Drawing.Size(100, 21);
-            this.FindBox.TabIndex = 4;
-            this.FindBox.KeyDown += new System.Windows.Forms.KeyEventHandler(this.FindBox_KeyDown);
+            this.richTextBox1.KeyDown += new System.Windows.Forms.KeyEventHandler(this.richTextBox1_KeyDown);
             // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(666, 262);
+            this.ClientSize = new System.Drawing.Size(600, 260);
             this.Controls.Add(this.FindBox);
             this.Controls.Add(this.groupBox);
             this.Controls.Add(this.richTextBox1);

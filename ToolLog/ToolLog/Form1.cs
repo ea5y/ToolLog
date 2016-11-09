@@ -16,6 +16,7 @@ namespace ToolLog
     public partial class Form1 : Form
     {
         string Command = "";
+        Process process;
 
         public Form1()
         {
@@ -35,48 +36,15 @@ namespace ToolLog
                 }
                 reg.Close();
             }
-            catch (Exception ex)
+            catch
             {
                 //MessageBox.Show(ex.Message);
             }
         }
 
-
-        private void StartBtn_Click(object sender, EventArgs e)
+        
+        private void WriteToRegedit()
         {
-            using (Process process = new System.Diagnostics.Process())
-            {
-                string str = this.CommandBox.Text;
-                var strArray = str.Split(' ');
-
-                string arguments = "";
-                for(int i = 1; i < strArray.Length; i++)
-                {
-                    arguments += strArray[i] + ' ';
-                }
-
-                process.StartInfo.FileName = this.FilePathBox.Text + "\\" + strArray[0];
-                process.StartInfo.Arguments = arguments;
-
-                this.Command = strArray[0] + " " + arguments;
-                // 必须禁用操作系统外壳程序  
-                process.StartInfo.UseShellExecute = false;
-                process.StartInfo.CreateNoWindow = true;
-                process.StartInfo.RedirectStandardOutput = true;
-
-                process.Start();
-
-                // 异步获取命令行内容  
-                process.BeginOutputReadLine();
-
-                // 为异步获取订阅事件  
-                process.OutputDataReceived += new DataReceivedEventHandler(process_OutputDataReceived);
-
-                //hide group
-                //this.groupBox.Visible = false;
-                
-            }
-
             try
             {
                 RegistryKey rsg = null;
@@ -87,10 +55,6 @@ namespace ToolLog
 
                 rsg = Registry.CurrentUser.OpenSubKey("SOFTWARE_STORAGE\\GAME_TOOLS\\TOOL_LOG", true);
 
-                /*foreach (KeyValuePair<string, string> kvp in proDict)
-                {
-                    rsg.SetValue(kvp.Key, kvp.Value);
-                }*/
                 rsg.SetValue("FilePath", this.FilePathBox.Text);
                 rsg.SetValue("Command", this.Command);
                 rsg.Close();
@@ -99,8 +63,72 @@ namespace ToolLog
             {
                 MessageBox.Show(ex.Message);
             }
-
         }
+
+        /// <summary>
+        /// start
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void StartBtn_Click(object sender, EventArgs e)
+        {
+            this.richTextBox1.Focus();
+
+            this.CreateProcess(ref this.process);
+
+            this.WriteToRegedit();
+        }
+
+        /// <summary>
+        /// create process
+        /// async model
+        /// </summary>
+        /// <param name="process"></param>
+        private void CreateProcess(ref Process process)
+        {
+            process = new System.Diagnostics.Process();
+            string str = this.CommandBox.Text;
+            var strArray = str.Split(' ');
+
+            string arguments = "";
+            for (int i = 1; i < strArray.Length; i++)
+            {
+                arguments += strArray[i] + ' ';
+            }
+
+            //process.StartInfo.FileName = this.FilePathBox.Text + "\\" + strArray[0];
+            process.StartInfo.FileName = strArray[0];
+            process.StartInfo.Arguments = arguments;
+
+            this.Command = strArray[0] + " " + arguments;
+            // 必须禁用操作系统外壳程序  
+            process.StartInfo.UseShellExecute = false;
+            process.StartInfo.CreateNoWindow = true;
+            process.StartInfo.RedirectStandardOutput = true;
+            process.StartInfo.RedirectStandardError = true;
+
+            //Catch exception
+            try
+            {
+                process.Start();
+            }
+            catch(Win32Exception e)
+            {
+                MessageBox.Show(e.Message); return;
+            }
+
+            this.timer1.Enabled = true;
+
+            // 异步获取命令行内容  
+            process.BeginOutputReadLine();
+            process.BeginErrorReadLine();
+
+            // 为异步获取订阅事件  
+            process.OutputDataReceived += new DataReceivedEventHandler(process_OutputDataReceived);
+            process.ErrorDataReceived += new DataReceivedEventHandler(process_ErrorDataReceived);
+           
+        }
+
 
         /// <summary>
         /// 
@@ -111,10 +139,9 @@ namespace ToolLog
         {
             // 这里仅做输出的示例，实际上您可以根据情况取消获取命令行的内容  
             // 参考：process.CancelOutputRead()  
-
+            
             if (String.IsNullOrEmpty(e.Data) == false)
             {
-                
                 switch (e.Data[0])
                 {
                     case 'E':
@@ -132,6 +159,16 @@ namespace ToolLog
 
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void process_ErrorDataReceived(object sender, DataReceivedEventArgs e)
+        {
+            this.LogException(e.Data + "\r\n");
+        }
+
         #region 日志信息，支持其他线程访问
         /// <summary>
         /// 
@@ -147,25 +184,26 @@ namespace ToolLog
         /// <param name="text"></param>
         public void LogAppend(Color color, string text)
         {
-            
-            int start = this.richTextBox1.SelectionStart;
-            
-            int len = this.richTextBox1.SelectionLength;
-            
-            int newStart = this.richTextBox1.TextLength;
-            //Debug.Print("start:" + start);
-            Debug.Print("newStart:" + newStart);
+            if (!this.process.HasExited)
+            {
+                int start = this.richTextBox1.SelectionStart;
 
-            this.richTextBox1.AppendText(text);
+                int len = this.richTextBox1.SelectionLength;
 
-            int newEnd = this.richTextBox1.TextLength;
-            Debug.Print("newEnd:" + newEnd);
+                int newStart = this.richTextBox1.TextLength;
+                //Debug.Print("start:" + start);
+                //Debug.Print("newStart:" + newStart);
 
-            this.richTextBox1.Select(newStart, newEnd - newStart);
-            this.richTextBox1.SelectionColor = color;            
-            this.richTextBox1.Select(start, len);
-            
-            
+                this.richTextBox1.AppendText(text);
+
+                int newEnd = this.richTextBox1.TextLength;
+                //Debug.Print("newEnd:" + newEnd);
+
+                this.richTextBox1.Select(newStart, newEnd - newStart);
+                this.richTextBox1.SelectionColor = color;
+                //this.richTextBox1.Select(start, len);
+            }
+
         }
 
         /// <summary>
@@ -198,34 +236,33 @@ namespace ToolLog
             richTextBox1.Invoke(lad, Color.DarkGray, DateTime.Now.ToString("HH:mm:ss-") + text);
         }
 
+        /// <summary>
+        /// Exception
+        /// </summary>
+        /// <param name="text"></param>
+        public void LogException(string text)
+        {
+            LogAppendDelegate lad = new LogAppendDelegate(LogAppend);
+            richTextBox1.Invoke(lad, Color.Black, text);
+        }
+
         #endregion
 
      
         /// <summary>
-        /// Timer
+        /// Timer auto scroll
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
         private void timer1_Tick(object sender, EventArgs e)
         {
-            if (!this.richTextBox1.isStopScroll)
+            if (this.process != null && !this.process.HasExited && !this.richTextBox1.isStopScroll)
             {
                 // set the current caret position to the end
                 this.richTextBox1.SelectionStart = this.richTextBox1.Text.Length;
                 // scroll it automatically
                 this.richTextBox1.ScrollToCaret();
             }
-            
-        }
-
-        private void textBox1_TextChanged(object sender, EventArgs e)
-        {
-            //Debug.Print("textChange!");
-        }
-
-        private void textBox1_Enter(object sender, EventArgs e)
-        {
-            Debug.Print("textChange!");
         }
 
         private void Browser_Click(object sender, EventArgs e)
@@ -243,34 +280,54 @@ namespace ToolLog
                 this.FilePathBox.Text = folderBrowserDialog1.SelectedPath;
             }
         }
-
-        internal void FindText(RichTextBox rtb, string text)
-        {
-            rtb.HideSelection = false;
-            int searchStartPosition = rtb.SelectionStart;
-            if (rtb.SelectedText.Length > 0)
-            {
-                searchStartPosition = rtb.SelectionStart + rtb.SelectedText.Length;
-            }
-
-            int indexOfText = rtb.Find(text, searchStartPosition, RichTextBoxFinds.None);
-            if (indexOfText >= 0)
-            {
-                searchStartPosition = indexOfText + rtb.SelectionLength;
-                rtb.Select(indexOfText, rtb.SelectionLength);
-            }
-            else
-            {
-                MessageBox.Show(String.Format("找不到“{0}”...", text));
-            }
-        }
-
+        
         private void FindBox_KeyDown(object sender, KeyEventArgs e)
         {
             if(e.KeyCode == Keys.Enter)
             {
-                this.FindText(this.richTextBox1, this.FindBox.Text);
+                this.richTextBox1.FindString(this.FindBox.Text);
+                this.FindBox.Visible = false;
             }
         }
+
+        /// <summary>
+        /// key map
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void richTextBox1_KeyDown(object sender, KeyEventArgs e)
+        {
+            //map "/" --->find
+            if (e.KeyCode == Keys.Oem2)
+            {
+                this.FindBox.Visible = true;
+                this.FindBox.Focus();
+            }
+
+            //map "Ctrl+d" --->stop
+            if(e.KeyCode == Keys.D && e.Control)
+            {
+                if (this.process != null && !this.process.HasExited)
+                {
+                    this.process.Kill();
+                    this.richTextBox1.AppendText("\r\nExit!\r\n");
+                    
+                    // scroll to caret
+                    this.richTextBox1.ScrollToCaret();
+                }
+            }
+            //map "n" --->find next
+            if(e.KeyCode == Keys.N && !e.Shift)
+            {
+                this.richTextBox1.FindMove(1);
+            }
+
+            //map "Shift+n" --->find prev
+            if(e.KeyCode == Keys.N && e.Shift)
+            {
+                this.richTextBox1.FindMove(-1);
+            }
+        }
+        
     }
 }
