@@ -8,7 +8,7 @@ using System.Runtime.InteropServices;
 using System.Drawing;
 using System.Diagnostics;
 
-namespace Custom
+namespace ToolLog
 {
     enum ScrollState
     {
@@ -18,15 +18,11 @@ namespace Custom
 
     class CustomRichTextBox : System.Windows.Forms.RichTextBox
     {
-        #region property
         private bool isFind = false;
         private ScrollState scrollState = ScrollState.Stop;
 
-        private bool isStopScroll = false;
+        public bool isStopScroll = false;
         public bool IsStopScroll { get { return this.isStopScroll; } private set { this.isStopScroll = value; } }
-
-        private bool isForceStopScroll = false;
-        public bool IsForceStopScroll { get { return this.isForceStopScroll; } private set { this.isForceStopScroll = value; } }
 
         public List<int> findBufferIndexList = new List<int>();
         private Dictionary<int, string> findBufferDic = new Dictionary<int, string>();
@@ -43,7 +39,9 @@ namespace Custom
 
         private int WM_SETFOCUS = 0x0007;
         private UInt32 EM_SETSEL = 0x00B1;
+
         
+
         private int TopLine
         {
             get
@@ -88,8 +86,7 @@ namespace Custom
                 return this.GetFirstCharIndexFromLine(this.CurrentLine - (this.MiddleLine - this.CurrentLine));
             }
         }
-        #endregion
-
+        
         [DllImport("user32.dll", CharSet = CharSet.Auto)]
         static extern IntPtr SendMessage(IntPtr hWnd, UInt32 Msg, int wParam, int lParam);
 
@@ -110,24 +107,32 @@ namespace Custom
 
         }
         
-        #region mouse event
-        /// <summary>
-        /// mouse down
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
+        public void ScrollBox(object state)
+        {
+            if (!(bool)state)
+            {
+                this.Invoke((Action)delegate () {
+
+                    // set the current caret position to the end
+                    this.SelectionStart = this.Text.Length;
+                    // scroll it automatically
+                    this.ScrollToCaret();
+                });
+            }
+        }
+
         public void rtb_MouseDown(object sender, MouseEventArgs e)
         {
             if (e.Button == MouseButtons.Right)
             {
                 if (this.scrollState == ScrollState.Stop)
                 {
-                    this.ForceStopScroll(true);
+                    this.StopScroll();
                     this.scrollState = ScrollState.Start;
                 }
                 else
                 {
-                    this.ForceStopScroll(false);
+                    this.StartScroll();
                     this.scrollState = ScrollState.Stop;
                 }
             }
@@ -139,23 +144,15 @@ namespace Custom
             {
                 highlightSelection(1, Text.Length - 1, false);
             }
+            
+            //highlightSelection(1, Text.Length - 1, false);
         }
 
-        /// <summary>
-        /// mouse up
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
         public void rtb_MouseUp(object sender, MouseEventArgs e)
         {
             mouseDown = false;
         }
 
-        /// <summary>
-        /// mouse move
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
         public void rtb_MouseMove(object sender, MouseEventArgs e)
         {
             if (mouseDown)
@@ -193,9 +190,8 @@ namespace Custom
                 highlightSelection(selStart, selEnd);
             }
         }
-        #endregion
 
-        #region high light
+
         /// <summary>
         /// High Light selection
         /// </summary>
@@ -220,11 +216,9 @@ namespace Custom
             selectText(start, end);
             SelectionBackColor = highlight ? Color.Yellow : defaultBackColour;
         }
-        #endregion
 
-        #region custom select
         /// <summary>
-        /// custom select
+        /// Select
         /// </summary>
         /// <param name="start"></param>
         /// <param name="end"></param>
@@ -232,9 +226,7 @@ namespace Custom
         {
             SendMessage(Handle, EM_SETSEL, start, end);
         }
-        #endregion
 
-        #region find
         /// <summary>
         /// Find
         /// </summary>
@@ -265,9 +257,9 @@ namespace Custom
                     {
                         if(this.findBufferIndexList.Count != 0)
                         {
-                            this.ForceStopScroll(true);
+                            this.StopScroll();
                             //
-                            this.FindMove(0, null);
+                            this.FindMove(0);
                         }
                         
                         //MessageBox.Show("找不到该字符串！");
@@ -290,35 +282,18 @@ namespace Custom
         /// Find move
         /// </summary>
         /// <param name="i"></param>
-        public void FindMove(int i, Label tips)
+        public void FindMove(int i)
         {
-            //hide tips
-            if (tips != null)
-                tips.Visible = false;
-
+            
             Debug.Print("sign:" + i);
             this.currentFind += i;
 
             //loop
             if (this.currentFind == -1)
-            {
-                this.currentFind = this.findBufferIndexList.Count - 1; 
-                if(tips != null)
-                {
-                    tips.Text = "Search hit Top, continuing at Bottom!";
-                    tips.Visible = true;
-                }
-            }
+                this.currentFind = this.findBufferIndexList.Count - 1;
             if (this.currentFind == this.findBufferIndexList.Count)
-            {
                 this.currentFind = 0;
-                if (tips != null)
-                {
-                    tips.Text = "Search hit Bottom, continuing at Top!";
-                    tips.Visible = true;
-                }
-            }
-                
+
             //set found high light
             this.SelectionStart = this.findBufferIndexList[this.currentFind];
             this.highlightFind(this.SelectionStart, this.SelectionStart + this.findBufferDic[this.SelectionStart].Length, true);
@@ -328,7 +303,7 @@ namespace Custom
                 this.ScrollToCaret();
 
             //page down fixed scroll pos
-            if (this.CurrentLine >= this.BottomLine)
+            if (this.CurrentLine > this.BottomLine)
             {
                 this.ScrollToCaret();
                 if(this.CurrentLine == this.TopLine)
@@ -376,7 +351,6 @@ namespace Custom
                 }
             }
         }
-        #endregion
 
         public void ClearAllBackColor()
         {
@@ -389,7 +363,8 @@ namespace Custom
             if (to)
             {
                 // set the current caret position to the end
-                this.SelectionStart = this.TextLength; 
+                this.SelectionStart = this.TextLength; //this.richTextBox1.GetFirstCharIndexFromLine(this.richTextBox1.BottomLine);
+                                                       // scroll it automatically
                 this.ScrollToCaret();
             }
         }
@@ -402,12 +377,37 @@ namespace Custom
         public void StartScroll()
         {
             this.IsStopScroll = false;
+            //this.ScrollToBottom(true);
         }
-
-        public void ForceStopScroll(bool force)
+        /*private async void TaskFind(string text)
         {
-            this.IsForceStopScroll = force;
-        }
+            
+            await Task.Run(
+                () => {
+                    int searchStart = 0;
+                    int indexOfText = 0;
+                    string test;
+                    this.Invoke((Action)(delegate () {
+                        while (searchStart < this.TextLength)
+                        {
+                            test = this.Text;
+                            indexOfText = test.IndexOf(text, searchStart);
+                            //indexOfText = this.Find(text, searchStart, RichTextBoxFinds.None);
+                            if (indexOfText < 0)
+                                break;
+                            //Debug.Print("Find:" + indexOfText);
+                            //Debug.Print("SelectionLength:" + this.SelectedText.Length);
+
+                            //Debug.Print("SelectionLength:" + text.Length);
+                            //highlightSelection(indexOfText, indexOfText + text.Length);
+                            searchStart = indexOfText + text.Length;
+
+                        }
+                    }));
+
+
+                });
+        }*/
     }
 
 }
