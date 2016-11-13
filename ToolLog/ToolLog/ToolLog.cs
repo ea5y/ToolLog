@@ -598,13 +598,15 @@ namespace ToolLog
             //map "n" --->find next
             if(e.KeyCode == Keys.N && !e.Shift)
             {
-                this.richTextBox1.FindMove(1, this.TipsLabel);
+                if(this.richTextBox1.IsFind)
+                    this.richTextBox1.FindMove(1, this.TipsLabel);
             }
 
             //map "Shift+n" --->find prev
             if(e.KeyCode == Keys.N && e.Shift)
             {
-                this.richTextBox1.FindMove(-1, this.TipsLabel);
+                if (this.richTextBox1.IsFind)
+                    this.richTextBox1.FindMove(-1, this.TipsLabel);
             }
         }
         

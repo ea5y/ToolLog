@@ -20,6 +20,8 @@ namespace Custom
     {
         #region property
         private bool isFind = false;
+        public bool IsFind { get { return this.isFind; } private set { this.isFind = value; } }
+
         private ScrollState scrollState = ScrollState.Stop;
 
         private bool isStopScroll = false;
@@ -135,7 +137,7 @@ namespace Custom
 
             // reset all the selection stuff
             selOrigin = selStart = selEnd = selPeak = selTrough = GetCharIndexFromPosition(e.Location);
-            if (!this.isFind)
+            if (!this.IsFind)
             {
                 highlightSelection(1, Text.Length - 1, false);
             }
@@ -249,7 +251,7 @@ namespace Custom
             if (text.Length == 0)
             {
                 //clear flag
-                this.isFind = false;
+                this.IsFind = false;
                 return;
             }
 
@@ -282,7 +284,7 @@ namespace Custom
                     //next start
                     searchStart = indexOfText + text.Length;
                 }
-                this.isFind = true;
+                this.IsFind = true;
             }));
         }
 
@@ -380,7 +382,7 @@ namespace Custom
 
         public void ClearAllBackColor()
         {
-            this.isFind = false;
+            this.IsFind = false;
             highlightSelection(1, Text.Length - 1, false);
         }
 
