@@ -30,6 +30,9 @@ namespace ToolLog
         private string isHideConfig;
         private string IsHideConfig { get { return this.isHideConfig; } set { this.isHideConfig = value; } }
 
+        private bool isClose = false;
+        private bool IsClose { get { return this.isClose; } set { this.isClose = value; } }
+
         Process process;
         
         private Thread threadADB;
@@ -174,7 +177,12 @@ namespace ToolLog
                     //this.process.
                     break;
             }
-            this.BeginInvoke((Action)delegate { this.StartBtn.Enabled = true; });
+            if (this.IsClose == false)
+            {
+                var ar = this.BeginInvoke((Action)delegate { this.StartBtn.Enabled = true; });
+                this.EndInvoke(ar);
+            }
+            
         }
 
         /// <summary>
@@ -367,7 +375,8 @@ namespace ToolLog
         public void LogError(string text)
         {
             LogAppendDelegate lad = new LogAppendDelegate(LogAppend);
-            richTextBox1.BeginInvoke(lad, Color.Red, DateTime.Now.ToString("HH:mm:ss-") + text);
+            var ar = richTextBox1.BeginInvoke(lad, Color.Red, DateTime.Now.ToString("HH:mm:ss-") + text);
+            richTextBox1.EndInvoke(ar);
         }
 
         /// <summary>
@@ -377,7 +386,8 @@ namespace ToolLog
         public void LogWarning(string text)
         {
             LogAppendDelegate lad = new LogAppendDelegate(LogAppend);
-            richTextBox1.BeginInvoke(lad, Color.Blue, DateTime.Now.ToString("HH:mm:ss-") + text);
+            var ar = richTextBox1.BeginInvoke(lad, Color.Blue, DateTime.Now.ToString("HH:mm:ss-") + text);
+            richTextBox1.EndInvoke(ar);
         }
 
         /// <summary>
@@ -387,7 +397,8 @@ namespace ToolLog
         public void LogMessage(string text)
         {
             LogAppendDelegate lad = new LogAppendDelegate(LogAppend);
-            richTextBox1.BeginInvoke(lad, Color.DarkGray, DateTime.Now.ToString("HH:mm:ss-") + text);
+            var ar = richTextBox1.BeginInvoke(lad, Color.DarkGray, DateTime.Now.ToString("HH:mm:ss-") + text);
+            richTextBox1.EndInvoke(ar);
         }
 
         /// <summary>
@@ -397,7 +408,8 @@ namespace ToolLog
         public void LogException(string text)
         {
             LogAppendDelegate lad = new LogAppendDelegate(LogAppend);
-            richTextBox1.BeginInvoke(lad, Color.Black, text);
+            var ar = richTextBox1.BeginInvoke(lad, Color.Black, text);
+            richTextBox1.EndInvoke(ar);
         }
         #endregion
 
@@ -411,8 +423,6 @@ namespace ToolLog
         /// <param name="e"></param>
         private void timer1_Tick(object sender, EventArgs e)
         {
-            if(this.ThreadADB != null)
-                Debug.Print(this.ThreadADB.ToString());
             // force stop scroll
             if (this.richTextBox1.IsForceStopScroll && !this.richTextBox1.IsStopScroll)
             {
@@ -665,12 +675,20 @@ namespace ToolLog
         /// <param name="e"></param>
         private void ToolLog_FormClosed(object sender, FormClosedEventArgs e)
         {
-            if (this.process != null)
+            this.IsClose = true;
+            try
             {
-                //this.process.Kill();
-                this.process.Kill();
-                this.ThreadADB.Join();
+                if (this.process != null)
+                {
+                    //this.process.Kill();
+                    this.process.Kill();
+                    if (this.ThreadADB != null && this.ThreadADB.IsAlive)
+                        this.ThreadADB.Join();
+                }
+            }catch(InvalidOperationException){
+
             }
+            
         }
         #endregion
     }
