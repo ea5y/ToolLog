@@ -20,9 +20,9 @@ namespace Custom
     {
         #region property
         private bool isFind = false;
-        public bool IsFind { get { return this.isFind; } private set { this.isFind = value; } }
+        public bool IsFind { get { return this.isFind; } set { this.isFind = value; } }
 
-        private ScrollState scrollState = ScrollState.Stop;
+        private ScrollState scrollState = ScrollState.Start;
 
         private bool isStopScroll = false;
         public bool IsStopScroll { get { return this.isStopScroll; } private set { this.isStopScroll = value; } }
@@ -122,15 +122,15 @@ namespace Custom
         {
             if (e.Button == MouseButtons.Right)
             {
-                if (this.scrollState == ScrollState.Stop)
+                if (this.scrollState == ScrollState.Start)
                 {
                     this.ForceStopScroll(true);
-                    this.scrollState = ScrollState.Start;
+                    this.scrollState = ScrollState.Stop;
                 }
                 else
                 {
                     this.ForceStopScroll(false);
-                    this.scrollState = ScrollState.Stop;
+                    this.scrollState = ScrollState.Start;
                 }
             }
             mouseDown = true;
@@ -244,8 +244,10 @@ namespace Custom
         public void FindString(string text)
         {
             //clear buffer
+            this.ClearAllBackColor();
             this.findBufferIndexList.Clear();
             this.findBufferDic.Clear();
+            this.currentFind = 0;
 
             //clear found
             if (text.Length == 0)
@@ -267,12 +269,20 @@ namespace Custom
                     {
                         if(this.findBufferIndexList.Count != 0)
                         {
-                            this.ForceStopScroll(true);
+                            if(this.scrollState == ScrollState.Start)
+                            {
+                                this.scrollState = ScrollState.Stop;
+                                this.ForceStopScroll(true);
+                            }
+                            
                             //
                             this.FindMove(0, null);
                         }
-                        
-                        //MessageBox.Show("找不到该字符串！");
+                        if(this.findBufferIndexList.Count == 0)
+                        {
+                            MessageBox.Show("找不到该字符串！");
+                        }
+
                         break;
                     }
 

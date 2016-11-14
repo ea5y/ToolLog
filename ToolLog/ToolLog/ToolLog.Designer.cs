@@ -116,6 +116,7 @@
             // 
             this.FilePathLabel.AutoSize = true;
             this.FilePathLabel.BackColor = System.Drawing.SystemColors.Window;
+            this.FilePathLabel.Enabled = false;
             this.FilePathLabel.Location = new System.Drawing.Point(102, 30);
             this.FilePathLabel.MaximumSize = new System.Drawing.Size(300, 20);
             this.FilePathLabel.MinimumSize = new System.Drawing.Size(300, 20);
@@ -137,6 +138,7 @@
             // 
             // Browser
             // 
+            this.Browser.Enabled = false;
             this.Browser.Location = new System.Drawing.Point(408, 27);
             this.Browser.Name = "Browser";
             this.Browser.Size = new System.Drawing.Size(75, 23);
@@ -192,6 +194,7 @@
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.richTextBox1.BackColor = System.Drawing.SystemColors.Window;
+            this.richTextBox1.IsFind = false;
             this.richTextBox1.Location = new System.Drawing.Point(-1, 0);
             this.richTextBox1.Name = "richTextBox1";
             this.richTextBox1.ReadOnly = true;

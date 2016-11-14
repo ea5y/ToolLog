@@ -24,6 +24,9 @@ namespace ToolLog
         private string path;
         private string Path { get { return this.path; } set { this.path = value; } }
 
+        private string fixedPath;
+        private string FixedPath { get { return this.fixedPath; } set { this.fixedPath = value; } }
+
         private string isHideConfig;
         private string IsHideConfig { get { return this.isHideConfig; } set { this.isHideConfig = value; } }
 
@@ -54,13 +57,20 @@ namespace ToolLog
 
         private void InitConfig()
         {
+            if (!string.IsNullOrEmpty(this.Path))
+                this.SetFilePath(this.Path);
+            if (this.FixedPath == "True")
+            {
+                this.FixedCheckBox.Checked = true;
+                this.FilePathLabel.Enabled = true;
+                this.Browser.Enabled = true;
+            }
             if (this.IsHideConfig == "True")
             {
                 this.groupBox.Visible = false;
                 this.AlwaysHideCheckBox.Checked = true;
-                this.richTextBox1.Focus();
             }
-               
+            this.richTextBox1.Focus();
         }
 
         private void InitRichTextBox()
@@ -69,28 +79,26 @@ namespace ToolLog
             {
                 this.richTextBox1.AppendText(" \r\n");
             }
-            this.richTextBox1.AppendText("README:\r\n");
-            this.richTextBox1.AppendText("1. Config:\r\n");
-            this.richTextBox1.AppendText("      * \"File Path\": IF you want to fixed the file path you can Browes, or else please ignore!\r\n");
-            this.richTextBox1.AppendText("      * \"Hide\": Hide config panel.\r\n");
-            this.richTextBox1.AppendText("      * \"AlwaysHide\": Always hide config panel.\r\n");
+            this.richTextBox1.AppendText("                    README:\r\n");
+            this.richTextBox1.AppendText("                    1. Config:\r\n");
+            this.richTextBox1.AppendText("                          * \"File Path\": IF you want to fixed the file path you can Browes, or else please ignore!\r\n");
+            this.richTextBox1.AppendText("                          * \"Hide\": Hide config panel.\r\n");
+            this.richTextBox1.AppendText("                          * \"AlwaysHide\": Always hide config panel.\r\n");
 
-            this.richTextBox1.AppendText("2. Map:\r\n");
-            this.richTextBox1.AppendText("      * \"/\": Find.\r\n");
-            this.richTextBox1.AppendText("      * \"Ctrl + d\": Exit.\r\n");
-            this.richTextBox1.AppendText("      * \"n\": Find next.\r\n");
-            this.richTextBox1.AppendText("      * \"Shift + n\": Find prev.\r\n");
-            this.richTextBox1.AppendText("      * \"Mouse left double click\": Clear all back color.\r\n");
-            this.richTextBox1.AppendText("      * \"Mouse right click\": Stop auto scroll.\r\n");
+            this.richTextBox1.AppendText("                    2. Map:\r\n");
+            this.richTextBox1.AppendText("                          * \":\": Input command.\r\n");
+            this.richTextBox1.AppendText("                          * \"/\": Find.\r\n");
+            this.richTextBox1.AppendText("                          * \"Ctrl + d\": Exit.\r\n");
+            this.richTextBox1.AppendText("                          * \"n\": Find next.\r\n");
+            this.richTextBox1.AppendText("                          * \"Shift + n\": Find prev.\r\n");
+            this.richTextBox1.AppendText("                          * \"Mouse left double click\": Clear all back color.\r\n");
+            this.richTextBox1.AppendText("                          * \"Mouse right click\": Stop auto scroll.\r\n");
 
-            this.richTextBox1.AppendText("3. Command:\r\n");
-            this.richTextBox1.AppendText("      * \":config\": Show the config panel.\r\n");
-            this.richTextBox1.AppendText("      * \":clear\": clear all text.\r\n");
-            
-            for (int i = 0; i < 8; i++)
-            {
-                this.richTextBox1.AppendText(" \r\n");
-            }
+            this.richTextBox1.AppendText("                    3. Command:\r\n");
+            this.richTextBox1.AppendText("                          * \":config\": Show the config panel.\r\n");
+            this.richTextBox1.AppendText("                          * \":clear\": clear all text.\r\n");
+
+            this.richTextBox1.AppendText(" \r\n");
         }
         #endregion
 
@@ -103,14 +111,8 @@ namespace ToolLog
 
         private void SetFilePath(string path)
         {
-            if (this.FixedCheckBox.Checked)
-            {
-                this.Path = path;
-            }
-            else
-            {
-                this.Path = null;
-            }
+            this.Path = path;
+            this.FilePathLabel.Text = path;
         }
         #endregion
 
@@ -124,6 +126,7 @@ namespace ToolLog
                 {
                     this.SetCommand((reg.GetValue("Command") as string), this.FixedCheckBox.Checked);
                     this.SetFilePath(reg.GetValue("FilePath") as string);
+                    this.FixedPath = reg.GetValue("Fixed") as string;
                     this.IsHideConfig = reg.GetValue("IsHideConfig") as string;
                 }
                 reg.Close();
@@ -163,6 +166,15 @@ namespace ToolLog
         private void RuningThreadADB()
         {
             this.CreateProcess(this.CommandLabel.Text.Substring(9), ref this.process);
+            this.Invoke((Action)delegate { this.StartBtn.Enabled = false; });
+            this.StartBtn.Enabled = false;
+            while (true)
+            {
+                if (this.process == null || this.process.HasExited)
+                    //this.process.
+                    break;
+            }
+            this.BeginInvoke((Action)delegate { this.StartBtn.Enabled = true; });
         }
 
         /// <summary>
@@ -239,6 +251,7 @@ namespace ToolLog
             process.StartInfo.CreateNoWindow = true;
             process.StartInfo.RedirectStandardOutput = true;
             process.StartInfo.RedirectStandardError = true;
+            process.StartInfo.StandardOutputEncoding = Encoding.UTF8;
 
             //Catch exception
             try
@@ -254,6 +267,7 @@ namespace ToolLog
             // 异步获取命令行内容  
             process.BeginOutputReadLine();
             process.BeginErrorReadLine();
+           
             // 为异步获取订阅事件  
             process.OutputDataReceived += new DataReceivedEventHandler(process_OutputDataReceived);
             process.ErrorDataReceived += new DataReceivedEventHandler(process_ErrorDataReceived);
@@ -288,6 +302,8 @@ namespace ToolLog
                         break;
                     case 'I':
                         this.LogMessage(e.Data + "\r\n");
+                        break;
+                    case 'D':
                         break;
                     default:
                         this.LogException(e.Data + "\r\n");
@@ -395,6 +411,8 @@ namespace ToolLog
         /// <param name="e"></param>
         private void timer1_Tick(object sender, EventArgs e)
         {
+            if(this.ThreadADB != null)
+                Debug.Print(this.ThreadADB.ToString());
             // force stop scroll
             if (this.richTextBox1.IsForceStopScroll && !this.richTextBox1.IsStopScroll)
             {
@@ -453,6 +471,20 @@ namespace ToolLog
         {
             this.SetFilePath(this.FilePathLabel.Text);
             this.SetCommand(this.Command, this.FixedCheckBox.Checked);
+
+            if(this.FixedCheckBox.Checked)
+            {
+                this.FilePathLabel.Enabled = true;
+                this.Browser.Enabled = true;
+            }else
+            {
+                this.FilePathLabel.Enabled = false;
+                this.Browser.Enabled = false;
+            }
+            
+
+            this.WriteToRegedit("Path", this.FilePathLabel.Text);
+            this.WriteToRegedit("Fixed", this.FixedCheckBox.Checked);
         }
 
         /// <summary>
@@ -552,6 +584,9 @@ namespace ToolLog
                         this.richTextBox1.FindString(this.FindBox.Text.Substring(1));
                         this.ShowFindBox(false);
                         break;
+                    default:
+                        MessageBox.Show("不存在该指令！");
+                        break;
                 }
             }
         }
@@ -617,6 +652,7 @@ namespace ToolLog
         /// <param name="e"></param>
         private void richTextBox1_MouseDoubleClick(object sender, MouseEventArgs e)
         {
+            //clear found
             this.richTextBox1.ClearAllBackColor();
         }
 
@@ -632,7 +668,8 @@ namespace ToolLog
             if (this.process != null)
             {
                 //this.process.Kill();
-                this.process.Close();
+                this.process.Kill();
+                this.ThreadADB.Join();
             }
         }
         #endregion
